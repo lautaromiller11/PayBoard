@@ -70,6 +70,30 @@ router.post('/', async (req, res) => {
         categoria: categoria || 'Otros'
       }
     });
+
+    // Si es mensual, crear servicios para los próximos 11 meses
+    if (periodicidad === 'mensual') {
+      const serviciosFuturos = [];
+      const baseDate = new Date(vencimiento);
+      for (let i = 1; i <= 11; i++) {
+        const fechaNueva = new Date(baseDate);
+        fechaNueva.setMonth(fechaNueva.getMonth() + i);
+        serviciosFuturos.push({
+          nombre,
+          monto: String(monto),
+          vencimiento: fechaNueva,
+          periodicidad,
+          estado: 'por_pagar',
+          userId: req.user.id,
+          linkPago: linkPago || null,
+          categoria: categoria || 'Otros'
+        });
+      }
+      if (serviciosFuturos.length > 0) {
+        await prisma.servicio.createMany({ data: serviciosFuturos });
+      }
+    }
+
     return res.status(201).json(servicio);
   } catch (err) {
     console.error(err);
