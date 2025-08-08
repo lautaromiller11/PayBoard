@@ -29,6 +29,9 @@ model Servicio {
   user         User      @relation(fields: [userId], references: [id])
   pagos        Pago[]
   createdAt    DateTime  @default(now())
+  // Nuevos campos
+  linkPago     String?
+  categoria    String   @default("Otros")
 }
 
 model Pago {

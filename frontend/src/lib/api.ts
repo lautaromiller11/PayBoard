@@ -40,6 +40,8 @@ export type Servicio = {
   estado: 'por_pagar' | 'pagado' | 'vencido'
   userId: number
   createdAt: string
+  linkPago?: string | null
+  categoria?: string
 }
 
 export type Pago = {
@@ -80,8 +82,12 @@ export type ResumenFinanciero = {
   transacciones: number
 }
 
-export async function fetchServicios(): Promise<Servicio[]> {
-  const { data } = await api.get('/servicios')
+export async function fetchServicios(mes?: number, año?: number): Promise<Servicio[]> {
+  const params = new URLSearchParams()
+  if (mes) params.append('mes', mes.toString())
+  if (año) params.append('año', año.toString())
+  const qs = params.toString()
+  const { data } = await api.get(`/servicios${qs ? `?${qs}` : ''}`)
   return data
 }
 

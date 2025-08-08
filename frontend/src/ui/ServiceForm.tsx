@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { createServicio, Servicio } from '../lib/api'
+import DEFAULT_CATEGORIES, { EXPENSE_CATEGORIES } from '../lib/categories'
 
 type Props = {
   onClose: () => void
@@ -11,6 +12,8 @@ export default function ServiceForm({ onClose, onCreated }: Props) {
   const [monto, setMonto] = useState('')
   const [vencimiento, setVencimiento] = useState('')
   const [periodicidad, setPeriodicidad] = useState<'unico' | 'mensual'>('mensual')
+  const [linkPago, setLinkPago] = useState('')
+  const [categoria, setCategoria] = useState(EXPENSE_CATEGORIES[0] || DEFAULT_CATEGORIES[0])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -25,7 +28,9 @@ export default function ServiceForm({ onClose, onCreated }: Props) {
         monto,
         vencimiento,
         periodicidad,
-        estado: 'por_pagar'
+        estado: 'por_pagar',
+        linkPago: linkPago || undefined,
+        categoria
       })
       onCreated(servicio)
       onClose()
@@ -124,6 +129,37 @@ export default function ServiceForm({ onClose, onCreated }: Props) {
                 : 'Pago único, no se repetirá'
               }
             </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Categoría
+            </label>
+            <div className="relative">
+              <select
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-h-48 overflow-y-auto"
+                value={categoria}
+                onChange={e => setCategoria(e.target.value)}
+              >
+                {EXPENSE_CATEGORIES.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Link de Pago (URL)
+            </label>
+            <input
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              value={linkPago}
+              onChange={e => setLinkPago(e.target.value)}
+              type="url"
+              placeholder="https://..."
+              pattern="https?://.+"
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

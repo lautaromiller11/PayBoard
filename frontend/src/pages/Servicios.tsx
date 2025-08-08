@@ -23,6 +23,12 @@ export default function Servicios() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [mesSeleccionado, setMesSeleccionado] = useState(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`
+  })
+
+  const [año, mes] = mesSeleccionado.split('-').map(Number)
 
   // Agrupar servicios por estado
   const grouped = useMemo(() => ({
@@ -31,15 +37,15 @@ export default function Servicios() {
     vencido: servicios.filter(s => s.estado === 'vencido'),
   }), [servicios])
 
-  // Cargar servicios al montar el componente
+  // Cargar servicios al montar y cuando cambia el mes
   useEffect(() => {
     loadServicios()
-  }, [])
+  }, [mes, año])
 
   const loadServicios = async () => {
     try {
       setLoading(true)
-      const data = await fetchServicios()
+      const data = await fetchServicios(mes, año)
       setServicios(data)
     } catch {
       setError('No se pudieron cargar los servicios')
@@ -85,18 +91,20 @@ export default function Servicios() {
     }
   }
 
-  // Marcar servicio como pagado
-  const onPay = async (s: Servicio) => {
+  // Marcar servicio como pagado y abrir link de pago si existe
+  const onPayClick = async (s: Servicio) => {
     try {
+      // Abrir link en una nueva pestaña si está definido
+      if (s.linkPago) {
+        window.open(s.linkPago, '_blank', 'noopener,noreferrer')
+      }
+      // Registrar pago y marcar como pagado
       const today = new Date().toISOString()
-      // Registrar el pago
       await createPago({ servicioId: s.id, fechaPago: today, montoPagado: s.monto })
-      // Cambiar estado a pagado
       const updated = await changeEstado(s.id, 'pagado')
       setServicios(prev => prev.map(x => x.id === s.id ? updated : x))
     } catch (error) {
-      console.error('Error al marcar como pagado:', error)
-      // Aquí podrías mostrar una notificación de error
+      console.error('Error al pagar servicio:', error)
     }
   }
 
@@ -148,42 +156,19 @@ export default function Servicios() {
               Organiza y gestiona tus servicios
             </p>
           </div>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          >
-            + Nuevo Servicio
-          </button>
-        </div>
-
-        {/* Estadísticas rápidas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow-sm border">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-yellow-400 rounded-full mr-2"></div>
-              <span className="text-sm text-gray-600">Por Pagar</span>
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mt-1">
-              {grouped.por_pagar.length}
-            </div>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
-              <span className="text-sm text-gray-600">Pagados</span>
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mt-1">
-              {grouped.pagado.length}
-            </div>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-red-400 rounded-full mr-2"></div>
-              <span className="text-sm text-gray-600">Vencidos</span>
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mt-1">
-              {grouped.vencido.length}
-            </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="month"
+              value={mesSeleccionado}
+              onChange={(e) => setMesSeleccionado(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={() => setModalOpen(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              + Nuevo Servicio
+            </button>
           </div>
         </div>
 
@@ -218,47 +203,34 @@ export default function Servicios() {
                                 ref={dragProvided.innerRef}
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
-                                className={`bg-white border rounded-lg p-4 shadow-sm transition-all ${dragSnapshot.isDragging
-                                    ? 'shadow-lg rotate-2 scale-105'
-                                    : 'hover:shadow-md'
-                                  }`}
+                                className="p-4 rounded-lg bg-white border shadow-sm hover:shadow transition-shadow"
                               >
-                                {/* Nombre del servicio */}
-                                <div className="font-semibold text-gray-900 mb-2">
-                                  {servicio.nombre}
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <div className="font-medium text-gray-900">{servicio.nombre}</div>
+                                    <div className="text-sm text-gray-600">Vence: {formatDate(servicio.vencimiento)}</div>
+                                    {isOverdue(servicio.vencimiento) && servicio.estado !== 'pagado' && (
+                                      <div className="mt-1 inline-block text-xs px-2 py-1 rounded bg-red-100 text-red-700 border border-red-200">
+                                        Vencido
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-lg font-semibold text-gray-900">${Number(servicio.monto).toLocaleString('es-AR')}</div>
+                                  </div>
                                 </div>
-
-                                {/* Monto */}
-                                <div className="text-lg font-bold text-blue-600 mb-2">
-                                  ${Number(servicio.monto).toLocaleString()}
-                                </div>
-
-                                {/* Fecha de vencimiento */}
-                                <div className={`text-sm mb-3 ${isOverdue(servicio.vencimiento) && servicio.estado !== 'pagado'
-                                    ? 'text-red-600 font-medium'
-                                    : 'text-gray-600'
-                                  }`}>
-                                  Vence: {formatDate(servicio.vencimiento)}
-                                </div>
-
-                                {/* Periodicidad */}
-                                <div className="text-xs text-gray-500 mb-3">
-                                  {servicio.periodicidad === 'mensual' ? 'Mensual' : 'Único'}
-                                </div>
-
-                                {/* Botones de acción */}
-                                <div className="flex gap-2">
-                                  {servicio.estado !== 'pagado' && (
+                                <div className="flex items-center gap-2 mt-3">
+                                  {servicio.linkPago && (
                                     <button
-                                      onClick={() => onPay(servicio)}
-                                      className="flex-1 px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                                      onClick={() => onPayClick(servicio)}
+                                      className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700"
                                     >
-                                      Marcar como Pagado
+                                      PAGAR
                                     </button>
                                   )}
                                   <button
                                     onClick={() => onDelete(servicio.id)}
-                                    className="px-3 py-1 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
+                                    className="px-3 py-1.5 text-sm text-gray-500 hover:text-red-600"
                                   >
                                     Eliminar
                                   </button>
@@ -267,20 +239,9 @@ export default function Servicios() {
                             )}
                           </Draggable>
                         ))}
-                        {provided.placeholder}
-
-                        {/* Mensaje cuando la columna está vacía */}
-                        {grouped[columnId].length === 0 && (
-                          <div className="text-center py-8 text-gray-400">
-                            <div className="text-sm">No hay servicios {columnTitles[columnId].toLowerCase()}</div>
-                            {columnId === 'por_pagar' && (
-                              <div className="text-xs mt-1">
-                                Arrastra servicios aquí o crea uno nuevo
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
+
+                      {provided.placeholder}
                     </div>
                   )}
                 </Droppable>
@@ -288,18 +249,17 @@ export default function Servicios() {
             </div>
           </DragDropContext>
         </div>
-      </div>
 
-      {/* Modal para crear nuevo servicio */}
-      {modalOpen && (
-        <ServiceForm
-          onClose={() => setModalOpen(false)}
-          onCreated={(newServicio) => {
-            setServicios(prev => [newServicio, ...prev])
-            setModalOpen(false)
-          }}
-        />
-      )}
+        {modalOpen && (
+          <ServiceForm
+            onClose={() => setModalOpen(false)}
+            onCreated={(s) => {
+              setServicios(prev => [s, ...prev])
+              setModalOpen(false)
+            }}
+          />
+        )}
+      </div>
     </Layout>
   )
 }
