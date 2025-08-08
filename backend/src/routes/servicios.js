@@ -179,29 +179,46 @@ router.patch('/:id/estado', async (req, res) => {
     const updated = await prisma.servicio.update({ where: { id }, data: { estado } });
 
     if (estado === 'pagado') {
-      // Create linked expense transaction
-      await prisma.transaccion.create({
-        data: {
-          tipo: 'gasto',
-          monto: String(service.monto),
-          descripcion: `Pago de servicio: ${service.nombre}`,
-          categoria: service.categoria || 'Otros',
-          fecha: new Date(),
-          periodicidad: service.periodicidad === 'mensual' ? 'mensual' : 'unico',
-          esRecurrente: false,
+      // Avoid duplicate expense: check if exists linked or by description
+      const desc = `Pago de servicio: ${service.nombre}`;
+      const existing = await prisma.transaccion.findFirst({
+        where: {
           userId: req.user.id,
-          servicioId: service.id
+          tipo: 'gasto',
+          OR: [
+            { servicioId: service.id },
+            { servicioId: null, descripcion: desc }
+          ]
         }
       });
+      if (!existing) {
+        await prisma.transaccion.create({
+          data: {
+            tipo: 'gasto',
+            monto: String(service.monto),
+            descripcion: desc,
+            categoria: service.categoria || 'Otros',
+            fecha: new Date(),
+            periodicidad: service.periodicidad === 'mensual' ? 'mensual' : 'unico',
+            esRecurrente: false,
+            userId: req.user.id,
+            servicioId: service.id
+          }
+        });
+      }
     }
 
     if (estado === 'por_pagar') {
       // Remove any linked expense transactions for this service
+      const desc = `Pago de servicio: ${service.nombre}`;
       await prisma.transaccion.deleteMany({
         where: {
           userId: req.user.id,
           tipo: 'gasto',
-          servicioId: service.id
+          OR: [
+            { servicioId: service.id },
+            { servicioId: null, descripcion: desc }
+          ]
         }
       });
     }
