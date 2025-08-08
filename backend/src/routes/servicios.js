@@ -163,7 +163,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// PATCH /api/servicios/:id/estado - update status and optionally create expense transaction when paid
+// PATCH /api/servicios/:id/estado - update status and optionally create/remove expense transaction when paid/reverted
 router.patch('/:id/estado', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -178,8 +178,8 @@ router.patch('/:id/estado', async (req, res) => {
 
     const updated = await prisma.servicio.update({ where: { id }, data: { estado } });
 
-    // If marked as pagado, create an expense transaction in Finanzas
     if (estado === 'pagado') {
+      // Create linked expense transaction
       await prisma.transaccion.create({
         data: {
           tipo: 'gasto',
@@ -189,7 +189,19 @@ router.patch('/:id/estado', async (req, res) => {
           fecha: new Date(),
           periodicidad: service.periodicidad === 'mensual' ? 'mensual' : 'unico',
           esRecurrente: false,
-          userId: req.user.id
+          userId: req.user.id,
+          servicioId: service.id
+        }
+      });
+    }
+
+    if (estado === 'por_pagar') {
+      // Remove any linked expense transactions for this service
+      await prisma.transaccion.deleteMany({
+        where: {
+          userId: req.user.id,
+          tipo: 'gasto',
+          servicioId: service.id
         }
       });
     }

@@ -32,6 +32,8 @@ model Servicio {
   // Nuevos campos
   linkPago     String?
   categoria    String   @default("Otros")
+  // Relación con transacciones (gastos generados al pagar)
+  transacciones Transaccion[]
 }
 
 model Pago {
@@ -55,6 +57,9 @@ model Transaccion {
   transaccionPadreId Int? // ID de la transacción original (para transacciones recurrentes)
   userId       Int
   user         User     @relation(fields: [userId], references: [id])
+  // Enlace opcional al servicio que originó el gasto
+  servicioId  Int?
+  servicio    Servicio? @relation(fields: [servicioId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
