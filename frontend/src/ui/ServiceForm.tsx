@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createServicio, Servicio } from '../lib/api'
 import DEFAULT_CATEGORIES, { EXPENSE_CATEGORIES } from '../lib/categories'
 
@@ -16,6 +16,8 @@ export default function ServiceForm({ onClose, onCreated }: Props) {
   const [categoria, setCategoria] = useState(EXPENSE_CATEGORIES[0] || DEFAULT_CATEGORIES[0])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isCatOpen, setIsCatOpen] = useState(false)
+  const catDropdownRef = useRef<HTMLDivElement | null>(null)
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,6 +46,25 @@ export default function ServiceForm({ onClose, onCreated }: Props) {
 
   // Establecer fecha mínima como hoy
   const today = new Date().toISOString().split('T')[0]
+
+  // Cerrar dropdown en click afuera o ESC
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!catDropdownRef.current) return
+      if (!catDropdownRef.current.contains(e.target as Node)) {
+        setIsCatOpen(false)
+      }
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsCatOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [])
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -135,16 +156,40 @@ export default function ServiceForm({ onClose, onCreated }: Props) {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Categoría
             </label>
-            <div className="relative">
-              <select
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-h-48 overflow-y-auto"
-                value={categoria}
-                onChange={e => setCategoria(e.target.value)}
+            <div className="relative" ref={catDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsCatOpen((v) => !v)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-between"
+                aria-haspopup="listbox"
+                aria-expanded={isCatOpen}
               >
-                {EXPENSE_CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+                <span className={categoria ? 'text-gray-900' : 'text-gray-500'}>
+                  {categoria || 'Seleccionar categoría'}
+                </span>
+                <span className={`ml-2 transform transition-transform ${isCatOpen ? 'rotate-180' : ''}`}>▾</span>
+              </button>
+              {isCatOpen && (
+                <div
+                  role="listbox"
+                  className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto"
+                >
+                  {EXPENSE_CATEGORIES.map((cat) => (
+                    <div
+                      key={cat}
+                      role="option"
+                      aria-selected={categoria === cat}
+                      onClick={() => {
+                        setCategoria(cat)
+                        setIsCatOpen(false)
+                      }}
+                      className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${categoria === cat ? 'bg-blue-100 text-blue-900' : 'text-gray-800'}`}
+                    >
+                      {cat}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
