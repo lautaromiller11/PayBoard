@@ -94,11 +94,9 @@ export default function Servicios() {
   // Marcar servicio como pagado y abrir link de pago si existe
   const onPayClick = async (s: Servicio) => {
     try {
-      // Abrir link en una nueva pestaña si está definido
       if (s.linkPago) {
         window.open(s.linkPago, '_blank', 'noopener,noreferrer')
       }
-      // Registrar pago y marcar como pagado
       const today = new Date().toISOString()
       await createPago({ servicioId: s.id, fechaPago: today, montoPagado: s.monto })
       const updated = await changeEstado(s.id, 'pagado')
@@ -198,7 +196,7 @@ export default function Servicios() {
                             index={index}
                             key={servicio.id}
                           >
-                            {(dragProvided, dragSnapshot) => (
+                            {(dragProvided) => (
                               <div
                                 ref={dragProvided.innerRef}
                                 {...dragProvided.draggableProps}
@@ -220,7 +218,7 @@ export default function Servicios() {
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2 mt-3">
-                                  {servicio.linkPago && (
+                                  {servicio.estado !== 'pagado' && (
                                     <button
                                       onClick={() => onPayClick(servicio)}
                                       className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700"
