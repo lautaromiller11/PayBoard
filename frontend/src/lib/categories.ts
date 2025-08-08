@@ -1,4 +1,4 @@
-export const CATEGORIES: string[] = [
+export const EXPENSE_CATEGORIES: string[] = [
   'Servicios',
   'Hogar',
   'Impuestos',
@@ -23,4 +23,22 @@ export const CATEGORIES: string[] = [
   'Otros'
 ]
 
-export default CATEGORIES
+export const INCOME_CATEGORIES: string[] = [
+  'Sueldo y salario',
+  'Bonificaciones y comisiones',
+  'Negocios propios',
+  'Freelance o trabajos independientes',
+  'Inversiones (dividendos, intereses)',
+  'Alquileres recibidos',
+  'Venta de bienes',
+  'Regalos y herencias',
+  'Reembolsos',
+  'Subsidios y ayudas',
+  'Otros ingresos'
+]
+
+export const ALL_CATEGORIES: string[] = [...new Set([...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES])]
+
+// Backward compatibility default export (previously a single array)
+const DEFAULT = EXPENSE_CATEGORIES
+export default DEFAULT

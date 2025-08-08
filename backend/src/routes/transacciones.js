@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(authenticateJWT);
 
 // Categorías disponibles
-const CATEGORIAS_VALIDAS = [
+const CATEGORIAS_GASTOS = [
   'Servicios',
   'Hogar',
   'Impuestos',
@@ -32,6 +32,28 @@ const CATEGORIAS_VALIDAS = [
   'Regalos y celebraciones',
   'Otros'
 ];
+
+const CATEGORIAS_INGRESOS = [
+  'Sueldo y salario',
+  'Bonificaciones y comisiones',
+  'Negocios propios',
+  'Freelance o trabajos independientes',
+  'Inversiones (dividendos, intereses)',
+  'Alquileres recibidos',
+  'Venta de bienes',
+  'Regalos y herencias',
+  'Reembolsos',
+  'Subsidios y ayudas',
+  'Otros ingresos'
+];
+
+const CATEGORIAS_VALIDAS = Array.from(new Set([...CATEGORIAS_GASTOS, ...CATEGORIAS_INGRESOS]));
+
+function categoriaValidaParaTipo(tipo, categoria) {
+  if (tipo === 'gasto') return CATEGORIAS_GASTOS.includes(categoria);
+  if (tipo === 'ingreso') return CATEGORIAS_INGRESOS.includes(categoria);
+  return false;
+}
 
 // GET /api/transacciones - obtener transacciones del usuario
 router.get('/', async (req, res) => {
@@ -90,6 +112,12 @@ router.post('/', async (req, res) => {
     if (!CATEGORIAS_VALIDAS.includes(categoria)) {
       return res.status(400).json({ 
         error: `La categoría debe ser una de: ${CATEGORIAS_VALIDAS.join(', ')}` 
+      });
+    }
+
+    if (!categoriaValidaParaTipo(tipo, categoria)) {
+      return res.status(400).json({ 
+        error: `La categoría "${categoria}" no es válida para el tipo "${tipo}"` 
       });
     }
     
@@ -169,6 +197,12 @@ router.put('/:id', async (req, res) => {
     if (categoria && !CATEGORIAS_VALIDAS.includes(categoria)) {
       return res.status(400).json({ 
         error: `La categoría debe ser una de: ${CATEGORIAS_VALIDAS.join(', ')}` 
+      });
+    }
+
+    if (tipo && categoria && !categoriaValidaParaTipo(tipo, categoria)) {
+      return res.status(400).json({ 
+        error: `La categoría "${categoria}" no es válida para el tipo "${tipo}"` 
       });
     }
     
@@ -288,7 +322,7 @@ router.get('/resumen/:anio/:mes', async (req, res) => {
   }
 });
 
-// GET /api/transacciones/categorias - obtener categorías disponibles
+// GET /api/transacciones/categorias - obtener categorías disponibles (todas)
 router.get('/categorias', (req, res) => {
   return res.json(CATEGORIAS_VALIDAS);
 });

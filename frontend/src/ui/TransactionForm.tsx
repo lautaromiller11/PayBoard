@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { createTransaccion, fetchCategorias, Transaccion } from '../lib/api'
-import CATEGORIES from '../lib/categories'
+import DEFAULT_CATEGORIES, { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '../lib/categories'
 
 interface TransactionFormProps {
   tipo: 'ingreso' | 'gasto'
@@ -14,7 +14,8 @@ export default function TransactionForm({ tipo, onClose, onCreated }: Transactio
   const [categoria, setCategoria] = useState('')
   const [fecha, setFecha] = useState('')
   const [periodicidad, setPeriodicidad] = useState<'unico' | 'mensual'>('unico')
-  const [categorias, setCategorias] = useState<string[]>(CATEGORIES)
+  const initialCats = tipo === 'ingreso' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
+  const [categorias, setCategorias] = useState<string[]>(initialCats)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isCatOpen, setIsCatOpen] = useState(false)
@@ -27,6 +28,8 @@ export default function TransactionForm({ tipo, onClose, onCreated }: Transactio
         // Intentar tomar desde API; si falla, usar lista local
         const data = await fetchCategorias()
         if (Array.isArray(data) && data.length > 0) {
+          // Si la API retorna un set único, se usa tal cual; si en el futuro separa por tipo,
+          // aquí se podría filtrar según 'tipo'. Por ahora mantenemos el comportamiento previo.
           setCategorias(data)
         }
       } catch (err) {
@@ -34,7 +37,8 @@ export default function TransactionForm({ tipo, onClose, onCreated }: Transactio
         // En error mantenemos las categorías locales
       }
       // Establecer selección por defecto
-      setCategoria((prev) => prev || (categorias[0] ?? CATEGORIES[0]))
+      const fallbackFirst = (initialCats[0] ?? DEFAULT_CATEGORIES[0])
+      setCategoria((prev) => prev || (categorias[0] ?? fallbackFirst))
     }
     
     loadCategorias()
