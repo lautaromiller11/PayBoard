@@ -209,7 +209,7 @@ router.patch('/:id/estado', async (req, res) => {
     }
 
     if (estado === 'por_pagar') {
-      // Remove any linked expense transactions for this service
+      // Remove any linked expense transactions for this service (linked by servicioId or by description)
       const desc = `Pago de servicio: ${service.nombre}`;
       await prisma.transaccion.deleteMany({
         where: {
@@ -217,7 +217,8 @@ router.patch('/:id/estado', async (req, res) => {
           tipo: 'gasto',
           OR: [
             { servicioId: service.id },
-            { servicioId: null, descripcion: desc }
+            { servicioId: null, descripcion: desc },
+            { descripcion: { contains: service.nombre } }
           ]
         }
       });
