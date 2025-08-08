@@ -13,14 +13,17 @@ const CATEGORIAS_VALIDAS = ['Servicios', 'Hogar', 'Impuestos', 'Salud', 'Educaci
 // GET /api/transacciones - obtener transacciones del usuario
 router.get('/', async (req, res) => {
   try {
-    const { mes, año, tipo } = req.query;
+    const { mes, tipo } = req.query;
+    const anio = req.query.anio || req.query['año'];
     
     let whereClause = { userId: req.user.id };
     
     // Filtrar por mes y año si se proporcionan
-    if (mes && año) {
-      const startDate = new Date(parseInt(año), parseInt(mes) - 1, 1);
-      const endDate = new Date(parseInt(año), parseInt(mes), 0, 23, 59, 59);
+    if (mes && anio) {
+      const parsedAnio = parseInt(anio);
+      const parsedMes = parseInt(mes);
+      const startDate = new Date(parsedAnio, parsedMes - 1, 1);
+      const endDate = new Date(parsedAnio, parsedMes, 0, 23, 59, 59);
       
       whereClause.fecha = {
         gte: startDate,
@@ -204,14 +207,14 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// GET /api/transacciones/resumen/:año/:mes - obtener resumen mensual
-router.get('/resumen/:año/:mes', async (req, res) => {
+// GET /api/transacciones/resumen/:anio/:mes - obtener resumen mensual (usar ASCII en params)
+router.get('/resumen/:anio/:mes', async (req, res) => {
   try {
-    const año = parseInt(req.params.año, 10);
+    const anio = parseInt(req.params.anio, 10);
     const mes = parseInt(req.params.mes, 10);
     
-    const startDate = new Date(año, mes - 1, 1);
-    const endDate = new Date(año, mes, 0, 23, 59, 59);
+    const startDate = new Date(anio, mes - 1, 1);
+    const endDate = new Date(anio, mes, 0, 23, 59, 59);
     
     const transacciones = await prisma.transaccion.findMany({
       where: {
