@@ -152,4 +152,9 @@ export async function fetchCategorias(): Promise<string[]> {
   return data
 }
 
+export async function fetchCategoriasPorTipo(tipo: 'ingreso' | 'gasto'): Promise<string[]> {
+  const { data } = await api.get(`/transacciones/categorias?tipo=${tipo}`)
+  return data
+}
+
 

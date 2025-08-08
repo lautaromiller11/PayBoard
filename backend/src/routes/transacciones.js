@@ -322,9 +322,12 @@ router.get('/resumen/:anio/:mes', async (req, res) => {
   }
 });
 
-// GET /api/transacciones/categorias - obtener categorías disponibles (todas)
+// GET /api/transacciones/categorias - obtener categorías disponibles (por tipo o todas)
 router.get('/categorias', (req, res) => {
-  return res.json(CATEGORIAS_VALIDAS);
+  const tipo = (req.query.tipo || '').toString()
+  if (tipo === 'ingreso') return res.json(CATEGORIAS_INGRESOS)
+  if (tipo === 'gasto') return res.json(CATEGORIAS_GASTOS)
+  return res.json(CATEGORIAS_VALIDAS)
 });
 
 module.exports = router;

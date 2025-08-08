@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { createTransaccion, fetchCategorias, Transaccion } from '../lib/api'
+import { createTransaccion, fetchCategoriasPorTipo, Transaccion } from '../lib/api'
 import DEFAULT_CATEGORIES, { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '../lib/categories'
 
 interface TransactionFormProps {
@@ -26,7 +26,7 @@ export default function TransactionForm({ tipo, onClose, onCreated }: Transactio
     const loadCategorias = async () => {
       try {
         // Intentar tomar desde API; si falla, usar lista local
-        const data = await fetchCategorias()
+        const data = await fetchCategoriasPorTipo(tipo)
         if (Array.isArray(data) && data.length > 0) {
           // Si la API retorna un set único, se usa tal cual; si en el futuro separa por tipo,
           // aquí se podría filtrar según 'tipo'. Por ahora mantenemos el comportamiento previo.
