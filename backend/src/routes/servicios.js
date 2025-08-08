@@ -7,6 +7,33 @@ const router = express.Router();
 // Protect all routes below
 router.use(authenticateJWT);
 
+// Normalize a date-only input (YYYY-MM-DD or Date) to UTC noon to avoid timezone shifts
+function toUtcNoon(dateInput) {
+  if (!dateInput) return null;
+  let y, m, d;
+  if (typeof dateInput === 'string') {
+    // Expecting 'YYYY-MM-DD' or ISO string; take first 10 chars safely
+    const part = dateInput.slice(0, 10);
+    const segs = part.split('-');
+    if (segs.length === 3) {
+      y = parseInt(segs[0], 10);
+      m = parseInt(segs[1], 10);
+      d = parseInt(segs[2], 10);
+    } else {
+      const tmp = new Date(dateInput);
+      y = tmp.getUTCFullYear();
+      m = tmp.getUTCMonth() + 1;
+      d = tmp.getUTCDate();
+    }
+  } else {
+    const tmp = new Date(dateInput);
+    y = tmp.getUTCFullYear();
+    m = tmp.getUTCMonth() + 1;
+    d = tmp.getUTCDate();
+  }
+  return new Date(Date.UTC(y, (m - 1), d, 12, 0, 0));
+}
+
 // GET /api/servicios - list services for current user (with optional month/year filter)
 router.get('/', async (req, res) => {
   try {
@@ -58,11 +85,13 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'nombre, monto, vencimiento and periodicidad are required' });
     }
 
+    const vencimientoUtc = toUtcNoon(vencimiento);
+
     const servicio = await prisma.servicio.create({
       data: {
         nombre,
         monto: String(monto),
-        vencimiento: new Date(vencimiento),
+        vencimiento: vencimientoUtc,
         periodicidad,
         estado: estado || 'por_pagar',
         userId: req.user.id,
@@ -74,10 +103,15 @@ router.post('/', async (req, res) => {
     // Si es mensual, crear servicios para los próximos 11 meses
     if (periodicidad === 'mensual') {
       const serviciosFuturos = [];
-      const baseDate = new Date(vencimiento);
+      const baseDate = vencimientoUtc;
       for (let i = 1; i <= 11; i++) {
-        const fechaNueva = new Date(baseDate);
-        fechaNueva.setMonth(fechaNueva.getMonth() + i);
+        const fechaNuevaLocal = new Date(baseDate);
+        fechaNuevaLocal.setUTCMonth(fechaNuevaLocal.getUTCMonth() + i);
+        // Asegurar que siga en UTC mediodía del día correspondiente
+        const yyyy = fechaNuevaLocal.getUTCFullYear();
+        const mm = fechaNuevaLocal.getUTCMonth() + 1;
+        const dd = fechaNuevaLocal.getUTCDate();
+        const fechaNueva = new Date(Date.UTC(yyyy, mm - 1, dd, 12, 0, 0));
         serviciosFuturos.push({
           nombre,
           monto: String(monto),
@@ -111,18 +145,17 @@ router.put('/:id', async (req, res) => {
     }
 
     const { nombre, monto, vencimiento, periodicidad, estado, linkPago, categoria } = req.body;
-    const updated = await prisma.servicio.update({
-      where: { id },
-      data: {
-        ...(nombre !== undefined ? { nombre } : {}),
-        ...(monto !== undefined ? { monto: String(monto) } : {}),
-        ...(vencimiento !== undefined ? { vencimiento: new Date(vencimiento) } : {}),
-        ...(periodicidad !== undefined ? { periodicidad } : {}),
-        ...(estado !== undefined ? { estado } : {}),
-        ...(linkPago !== undefined ? { linkPago } : {}),
-        ...(categoria !== undefined ? { categoria } : {})
-      }
-    });
+    const data = {
+      ...(nombre !== undefined ? { nombre } : {}),
+      ...(monto !== undefined ? { monto: String(monto) } : {}),
+      ...(vencimiento !== undefined ? { vencimiento: toUtcNoon(vencimiento) } : {}),
+      ...(periodicidad !== undefined ? { periodicidad } : {}),
+      ...(estado !== undefined ? { estado } : {}),
+      ...(linkPago !== undefined ? { linkPago } : {}),
+      ...(categoria !== undefined ? { categoria } : {})
+    };
+
+    const updated = await prisma.servicio.update({ where: { id }, data });
     return res.json(updated);
   } catch (err) {
     console.error(err);
