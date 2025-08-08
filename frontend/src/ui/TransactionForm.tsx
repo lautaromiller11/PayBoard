@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createTransaccion, fetchCategorias, Transaccion } from '../lib/api'
 import CATEGORIES from '../lib/categories'
 
@@ -17,6 +17,8 @@ export default function TransactionForm({ tipo, onClose, onCreated }: Transactio
   const [categorias, setCategorias] = useState<string[]>(CATEGORIES)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isCatOpen, setIsCatOpen] = useState(false)
+  const catDropdownRef = useRef<HTMLDivElement | null>(null)
 
   // Cargar categorías al montar el componente
   useEffect(() => {
@@ -40,6 +42,25 @@ export default function TransactionForm({ tipo, onClose, onCreated }: Transactio
     // Establecer fecha actual por defecto
     const today = new Date().toISOString().split('T')[0]
     setFecha(today)
+  }, [])
+
+  // Cerrar dropdown en click afuera o ESC
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!catDropdownRef.current) return
+      if (!catDropdownRef.current.contains(e.target as Node)) {
+        setIsCatOpen(false)
+      }
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsCatOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -142,16 +163,43 @@ export default function TransactionForm({ tipo, onClose, onCreated }: Transactio
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Categoría *
             </label>
-            <select 
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-              value={categoria} 
-              onChange={e => setCategoria(e.target.value)}
-              required
-            >
-              {categorias.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+            <div className="relative" ref={catDropdownRef}>
+              {/* Hidden input to keep required validation semantics */}
+              <input type="text" className="hidden" value={categoria} onChange={() => {}} required readOnly />
+              <button
+                type="button"
+                onClick={() => setIsCatOpen((v) => !v)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-between"
+                aria-haspopup="listbox"
+                aria-expanded={isCatOpen}
+              >
+                <span className={categoria ? 'text-gray-900' : 'text-gray-500'}>
+                  {categoria || 'Seleccionar categoría'}
+                </span>
+                <span className={`ml-2 transform transition-transform ${isCatOpen ? 'rotate-180' : ''}`}>▾</span>
+              </button>
+              {isCatOpen && (
+                <div
+                  role="listbox"
+                  className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                >
+                  {categorias.map((cat) => (
+                    <div
+                      key={cat}
+                      role="option"
+                      aria-selected={categoria === cat}
+                      onClick={() => {
+                        setCategoria(cat)
+                        setIsCatOpen(false)
+                      }}
+                      className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${categoria === cat ? 'bg-blue-100 text-blue-900' : 'text-gray-800'}`}
+                    >
+                      {cat}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Fecha */}
