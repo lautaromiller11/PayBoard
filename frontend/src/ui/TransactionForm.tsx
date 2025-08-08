@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createTransaccion, fetchCategorias, Transaccion } from '../lib/api'
+import CATEGORIES from '../lib/categories'
 
 interface TransactionFormProps {
   tipo: 'ingreso' | 'gasto'
@@ -13,7 +14,7 @@ export default function TransactionForm({ tipo, onClose, onCreated }: Transactio
   const [categoria, setCategoria] = useState('')
   const [fecha, setFecha] = useState('')
   const [periodicidad, setPeriodicidad] = useState<'unico' | 'mensual'>('unico')
-  const [categorias, setCategorias] = useState<string[]>([])
+  const [categorias, setCategorias] = useState<string[]>(CATEGORIES)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -21,14 +22,17 @@ export default function TransactionForm({ tipo, onClose, onCreated }: Transactio
   useEffect(() => {
     const loadCategorias = async () => {
       try {
+        // Intentar tomar desde API; si falla, usar lista local
         const data = await fetchCategorias()
-        setCategorias(data)
-        if (data.length > 0) {
-          setCategoria(data[0]) // Seleccionar la primera categoría por defecto
+        if (Array.isArray(data) && data.length > 0) {
+          setCategorias(data)
         }
       } catch (err) {
         console.error('Error loading categorias:', err)
+        // En error mantenemos las categorías locales
       }
+      // Establecer selección por defecto
+      setCategoria((prev) => prev || (categorias[0] ?? CATEGORIES[0]))
     }
     
     loadCategorias()

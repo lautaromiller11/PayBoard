@@ -8,7 +8,30 @@ const router = express.Router();
 router.use(authenticateJWT);
 
 // Categorías disponibles
-const CATEGORIAS_VALIDAS = ['Servicios', 'Hogar', 'Impuestos', 'Salud', 'Educacion'];
+const CATEGORIAS_VALIDAS = [
+  'Servicios',
+  'Hogar',
+  'Impuestos',
+  'Salud',
+  'Educación',
+  'Alimentación',
+  'Transporte',
+  'Ocio y entretenimiento',
+  'Trabajo y negocios',
+  'Tecnología y electrónica',
+  'Ropa y accesorios',
+  'Viajes y vacaciones',
+  'Ahorros e inversiones',
+  'Deudas y préstamos',
+  'Donaciones y caridad',
+  'Seguros',
+  'Cuidado personal y belleza',
+  'Mascotas',
+  'Mantenimiento y reparaciones',
+  'Facturas y suscripciones',
+  'Regalos y celebraciones',
+  'Otros'
+];
 
 // GET /api/transacciones - obtener transacciones del usuario
 router.get('/', async (req, res) => {
