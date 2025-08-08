@@ -70,7 +70,11 @@ export default function FinancialChart({ resumen, mes, año }: FinancialChartPro
             <XAxis dataKey="name" />
             <YAxis tickFormatter={formatCurrency} />
             <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-            <Bar dataKey="monto" fill={(entry) => entry.color} />
+            <Bar dataKey="monto">
+              {datosComparacion.map((item, idx) => (
+                <Cell key={`cell-${idx}`} fill={item.color} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
