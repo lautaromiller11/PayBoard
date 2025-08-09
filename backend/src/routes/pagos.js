@@ -1,10 +1,10 @@
 const express = require('express');
 const prisma = require('../config/prisma');
-const { authenticateJWT } = require('../middleware/auth');
+const { authenticateJWT, ensureUserExists } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.use(authenticateJWT);
+router.use(authenticateJWT, ensureUserExists);
 
 // GET /api/pagos?servicioId=
 router.get('/', async (req, res) => {

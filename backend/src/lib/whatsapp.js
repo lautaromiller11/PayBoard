@@ -1,4 +1,9 @@
-const twilio = require('twilio');
+let twilio = null;
+try {
+  twilio = require('twilio');
+} catch (_) {
+  twilio = null;
+}
 const prisma = require('../config/prisma');
 
 // Configura tus credenciales de Twilio aquí
@@ -8,7 +13,7 @@ const TWILIO_WHATSAPP_FROM = process.env.TWILIO_WHATSAPP_FROM; // Ej: 'whatsapp:
 
 let cachedClient = null;
 function getTwilioClient() {
-  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !twilio) {
     return null;
   }
   if (cachedClient) return cachedClient;
