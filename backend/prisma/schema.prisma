@@ -18,6 +18,7 @@ model User {
   transacciones Transaccion[]
   phoneNumber String?   // Número de teléfono para alertas
   whatsappAlertsEnabled Boolean @default(false) // Preferencia de alerta
+  cotizacionesSeleccionadas String? // <-- Nuevo campo (puedes usar JSON.stringify)
 }
 
 model Servicio {
@@ -59,14 +60,4 @@ model Transaccion {
   user         User     @relation(fields: [userId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-}
-
-model User {
-  id           Int           @id @default(autoincrement())
-  email        String        @unique
-  password     String
-  createdAt    DateTime      @default(now())
-  servicios    Servicio[]
-  transacciones Transaccion[]
-  cotizacionesSeleccionadas String? // <-- Nuevo campo (puedes usar JSON.stringify)
 }

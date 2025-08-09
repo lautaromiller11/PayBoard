@@ -139,6 +139,27 @@ router.post('/user/config', authenticateJWT, async (req, res) => {
   }
 });
 
+// Envío de WhatsApp de prueba con la configuración del usuario
+const { sendWhatsAppAlert } = require('../lib/whatsapp');
+router.post('/whatsapp/test', authenticateJWT, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { phoneNumber: true, whatsappAlertsEnabled: true }
+    });
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (!user.whatsappAlertsEnabled) return res.status(400).json({ error: 'Las alertas de WhatsApp no están activadas' });
+    if (!user.phoneNumber) return res.status(400).json({ error: 'Número de teléfono no configurado' });
+
+    const result = await sendWhatsAppAlert(user.phoneNumber, 'Mensaje de prueba de PayBoard ✅');
+    const sent = !!result; // será null si no hay config Twilio
+    return res.json({ ok: true, sent, info: sent ? 'Mensaje enviado' : 'Twilio no está configurado, no se envió' });
+  } catch (err) {
+    console.error('Error en /api/auth/whatsapp/test:', err);
+    return res.status(500).json({ error: 'No se pudo enviar el mensaje de prueba' });
+  }
+});
+
 module.exports = router;
 
 
