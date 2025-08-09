@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 import WhatsAppConfig from '../components/WhatsAppConfig';
 import { useAuth } from '../context/AuthContext';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 export default function Perfil() {
     const { token, user } = useAuth();

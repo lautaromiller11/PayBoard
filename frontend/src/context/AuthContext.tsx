@@ -10,7 +10,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4001/api'
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'))
